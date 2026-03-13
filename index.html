@@ -69,8 +69,14 @@
             border-color: #2563eb;
         }
 
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
         .btn-generate {
-            width: 100%;
+            flex: 1;
             padding: 12px;
             background: #2563eb;
             color: #fff;
@@ -79,11 +85,26 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 16px;
         }
 
         .btn-generate:hover {
             background: #1d4ed8;
+        }
+
+        .btn-generate-doc {
+            flex: 1;
+            padding: 12px;
+            background: #16a34a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-generate-doc:hover {
+            background: #15803d;
         }
 
         /* --- PREVIEW PANEL --- */
@@ -257,7 +278,10 @@
                 <input type="date" id="docFecha" oninput="updatePreview()">
             </div>
 
-            <button class="btn-generate" onclick="generatePDF()">Generar PDF</button>
+            <div class="btn-row">
+                <button class="btn-generate" onclick="generatePDF()">Generar PDF</button>
+                <button class="btn-generate-doc" onclick="generateDOC()">Generar DOC</button>
+            </div>
         </div>
 
         <!-- PREVIEW -->
@@ -444,6 +468,56 @@
             };
 
             html2pdf().set(opt).from(element).save();
+        }
+
+        async function generateDOC() {
+            await convertLogoToBase64();
+            const element = document.getElementById('document');
+            const nombre = document.getElementById('benNombre').value.trim().toUpperCase();
+
+            const styles = `
+                <style>
+                    body { font-family: Arial, Helvetica, sans-serif; color: #000; }
+                    .document { width: 100%; padding: 40px 60px; }
+                    .doc-header { text-align: center; line-height: 1.5; }
+                    .doc-header .line1, .doc-header .line2, .doc-header .line3 { font-size: 18px; }
+                    .doc-logo { text-align: center; margin: 6px 0; }
+                    .doc-logo img { max-width: 340px; height: auto; }
+                    .doc-title { text-align: center; font-size: 16px; font-weight: normal; margin: 18px 0 14px; }
+                    .doc-body { font-size: 16px; text-align: justify; line-height: 1.5; margin-bottom: 20px; }
+                    .doc-body .nombre-beneficiario { font-weight: bold; text-transform: uppercase; }
+                    .doc-firma-header { text-align: center; font-weight: bold; font-size: 16px; line-height: 1.5; margin: 28px 0 40px; }
+                    .doc-firmas { display: flex; justify-content: space-between; margin-top: 16px; }
+                    .firma-col { text-align: center; font-size: 16px; line-height: 1.5; width: 32%; }
+                    .firma-col .firma-linea { border-top: 1px solid #000; width: 100%; margin-bottom: 4px; }
+                    .doc-nota { margin-top: 42px; font-size: 16px; }
+                </style>
+            `;
+
+            const html = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                      xmlns:w="urn:schemas-microsoft-com:office:word"
+                      xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8">
+                    <xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml>
+                    ${styles}
+                </head>
+                <body>
+                    ${element.innerHTML}
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Constancia_Residencia_${nombre.replace(/\s+/g, '_')}.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // Initial render
